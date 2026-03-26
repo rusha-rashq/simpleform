@@ -1,0 +1,11 @@
+name: SimpleForm
+description: A unified cloud abstraction tool that deploys infrastructure to AWS or GCP using a single, provider-agnostic configuration.
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: python

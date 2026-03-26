@@ -1,0 +1,4 @@
+cloud: aws #change to your cloud provider
+resource: bucket
+name: simpleform-test-storage
+region: us-east-1
