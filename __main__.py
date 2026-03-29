@@ -22,19 +22,43 @@ use_versioning = settings.get("versioning", False)
 
 # 3. Logic for AWS
 if config["cloud"] == "aws":
-    # Set the region dynamically
-    aws_provider = aws.Provider("aws-provider", region=target_region["aws"])
-
+    # 1. Create the Bucket
     bucket = aws.s3.Bucket(
         config["name"],
-        acl="public-read" if is_public else "private",
         versioning=aws.s3.BucketVersioningArgs(
             enabled=use_versioning,
         ),
-        opts=pulumi.ResourceOptions(provider=aws_provider),
     )
 
-    pulumi.export("bucket_url", bucket.website_endpoint)
+    # 2. Fix the Ownership (Allows ACLs to work)
+    ownership = aws.s3.BucketOwnershipControls(
+        f"{config['name']}-ownership",
+        bucket=bucket.id,
+        rule={"object_ownership": "BucketOwnerPreferred"},
+    )
+
+    # 3. Disable the "Block Public Access" (Allows public buckets)
+    public_access_block = aws.s3.BucketPublicAccessBlock(
+        f"{config['name']}-pab",
+        bucket=bucket.id,
+        block_public_acls=False,
+        block_public_policy=False,
+        ignore_public_acls=False,
+        restrict_public_buckets=False,
+    )
+
+    # 4. Set the ACL only AFTER ownership and public access are configured
+    if is_public:
+        bucket_acl = aws.s3.BucketAclV2(
+            f"{config['name']}-acl",
+            bucket=bucket.id,
+            acl="public-read",
+            opts=pulumi.ResourceOptions(depends_on=[ownership, public_access_block]),
+        )
+
+    pulumi.export(
+        "bucket_url", bucket.id.apply(lambda id: f"https://{id}.s3.amazonaws.com")
+    )
     pulumi.export("cloud_provider", "Amazon Web Services")
 
 # 4. Logic for GCP

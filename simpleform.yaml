@@ -1,7 +1,7 @@
-cloud: aws  # switch to 'gcp' to test
+cloud: aws
+name: buck1
 resource: bucket
-name: simpleform-storage
 settings:
+  public_access: true
   region: us-east
-  public_access: false
   versioning: true
