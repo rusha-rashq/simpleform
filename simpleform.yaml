@@ -1,4 +1,7 @@
-cloud: aws #change to your cloud provider
+cloud: aws  # switch to 'gcp' to test
 resource: bucket
-name: simpleform-test-storage
-region: us-east-1
+name: simpleform-storage
+settings:
+  region: us-east
+  public_access: false
+  versioning: true
