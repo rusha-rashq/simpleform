@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 import questionary
@@ -5,47 +6,56 @@ import yaml
 
 
 def run_cli():
-    # 1. Collect User Intent
-    cloud = questionary.select(
-        "Which cloud provider do you want to use?", choices=["aws", "gcp"]
+    print("--- 🚀 Simpleform v1.0 CLI ---")
+
+    # 1. Choose Action
+    action = questionary.select(
+        "What would you like to do?",
+        choices=["Deploy New Infrastructure", "Destroy Existing Infrastructure"],
     ).ask()
 
-    resource = questionary.select(
-        "What resource are you deploying?", choices=["bucket", "server"]
-    ).ask()
+    # Handle Destroy
+    if action == "Destroy Existing Infrastructure":
+        confirm = questionary.confirm(
+            "⚠️ This will delete ALL resources in the current stack. Proceed?"
+        ).ask()
+        if confirm:
+            env = os.environ.copy()
+            print("🔥 Destroying infrastructure...")
+            subprocess.run(["pulumi", "destroy", "--yes"], env=env)
+        return
 
-    name = questionary.text("Give your resource a name:").ask()
+    # 2. Collect Intent for Deployment
+    cloud = questionary.select("Which cloud provider?", choices=["aws", "gcp"]).ask()
+
+    resource = questionary.select("Resource type?", choices=["bucket", "server"]).ask()
+
+    name = questionary.text("Resource name:").ask()
 
     region = questionary.select(
-        "Select a global region:", choices=["us-east", "us-west", "europe"]
+        "Global region:", choices=["us-east", "us-west", "europe"]
     ).ask()
 
-    # 2. Bucket-Specific Settings
     settings = {"region": region}
+
     if resource == "bucket":
-        public = questionary.confirm("Should this bucket be public?").ask()
-        versioning = questionary.confirm("Enable versioning for data safety?").ask()
-        settings["public_access"] = public
-        settings["versioning"] = versioning
+        settings["public_access"] = questionary.confirm("Public access?").ask()
+        settings["versioning"] = questionary.confirm("Enable versioning?").ask()
 
-    # 3. Server-Specific Settings
     elif resource == "server":
-        size = questionary.select(
-            "What size server?", choices=["small", "medium"]
+        settings["size"] = questionary.select(
+            "Server size:", choices=["small", "medium"]
         ).ask()
-        settings["size"] = size
 
-    # 4. Write the YAML File
+    # 3. Write YAML
     config = {"cloud": cloud, "resource": resource, "name": name, "settings": settings}
-
     with open("simpleform.yaml", "w") as f:
         yaml.dump(config, f)
 
-    print(f"\n✅ Configuration saved to simpleform.yaml for {cloud}!")
-
-    # 5. Trigger Pulumi
-    if questionary.confirm("Do you want to deploy this now?").ask():
-        subprocess.run(["pulumi", "up"])
+    # 4. Deploy
+    if questionary.confirm("Deploy now?").ask():
+        env = os.environ.copy()
+        subprocess.run(["pulumi", "up", "--yes"], env=env)
 
 
 if __name__ == "__main__":

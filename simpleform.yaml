@@ -1,7 +1,6 @@
 cloud: aws
-name: buck1
-resource: bucket
+name: demo-vm
+resource: server
 settings:
-  public_access: true
   region: us-east
-  versioning: true
+  size: small
