@@ -1,5 +1,5 @@
 cloud: aws
-name: demo-vm
+name: demo-vpc
 resource: server
 settings:
   region: us-east
